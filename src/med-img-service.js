@@ -74,7 +74,7 @@ export default class MedImgService{
     });
   }
 
-  getDicomStream(id, filename){
+  getDicomBuffer(id, filename){
     return this.http({
       method: 'GET',
       url: '/med-img/dicom/' + encodeURIComponent(id) + '/' + encodeURIComponent(filename),

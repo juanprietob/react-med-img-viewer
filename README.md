@@ -10,20 +10,16 @@
 npm install --save react-med-img
 ```
 
+```
+export NODE_OPTIONS=--max_old_space_size=8192
+```
+
 ## Usage
 
 ```jsx
-import React, { Component } from 'react'
+import MedImgViewer from 'med-img-viewer'
 
-import MyComponent from 'react-med-img'
 
-class Example extends Component {
-  render () {
-    return (
-      <MyComponent />
-    )
-  }
-}
 ```
 
 ## License
