@@ -9,6 +9,14 @@ export default class MedImgService{
     this.http = http;
   }
 
+  getPublicSurf(surf){
+    return this.http({
+      method: 'GET',
+      url: '/surf/' + encodeURIComponent(surf),
+      responseType: 'text'
+    });
+  }
+
   createProject(project){
     return this.http({
       method: 'POST',
