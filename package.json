@@ -47,7 +47,7 @@
     "dist"
   ],
   "dependencies": {
-    "med-img-reader": "file:../../../med-img-reader",
+    "med-img-reader": "^1.0.0",
     "underscore": "^1.9.1",
     "url-parse": "^1.4.7",
     "vtk.js": "^8.6.2"
