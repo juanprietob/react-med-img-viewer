@@ -95,7 +95,7 @@ class MedImgSurf extends Component {
     { surf: "Model_10_10.vtk", color: [199,255,0] },
     { surf: "Model_40_40.vtk", color: [13,226,234] },
     { surf: "Model_41_41.vtk", color: [13,226,234] },
-    { surf: "stx_stx_noscale_101247_V12_t1w_gray_surface_rsl_left_327680_native_NRRDSpace_decim.vtk", color: [255, 255, 255], /*representation: 1,*/ opacity: 0.3 }], function(surf){
+    { surf: "left_cortex.vtk", color: [255, 255, 255], /*representation: 1,*/ opacity: 0.3 }], function(surf){
       return self.medimgservice.getPublicSurf(surf.surf)
       .then(function(res){
         reader.parseAsText(res.data);
