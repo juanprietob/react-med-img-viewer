@@ -114,10 +114,10 @@ class MedImgStudy extends Component {
     }
     if(studyid){
       return (
-        <ListGroup style={{overflow: "auto", height: "inherit"}}>
+        <ListGroup>
           {this.getStudyDetail(studyid)}
         </ListGroup>
-        )
+      )
     }
   }
 }
