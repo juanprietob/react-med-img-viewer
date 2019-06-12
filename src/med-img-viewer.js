@@ -4,6 +4,8 @@ import ReactDOM from 'react-dom';
 import { connect } from "react-redux";
 import { withRouter } from 'react-router-dom';
 
+import './styles.css'
+
 import MedImgService from './med-img-service';
 import medImgInteractorStyleImage from './med-img-interactor-style-image';
 
@@ -11,66 +13,151 @@ import _ from 'underscore';
 
 // import {JWTAuthService} from 'react-jwt-auth';
 
-import {Row, Card, Col, Container, ButtonToolbar, ButtonGroup, Button, ProgressBar} from 'react-bootstrap';
+import {Row, Card, Col, Container, ButtonToolbar, ButtonGroup, Button, ProgressBar, Dropdown} from 'react-bootstrap';
 
-import {Eye, EyeOff, Loader} from 'react-feather';
+import {Grid, Layout, Columns, Square, EyeOff, Eye} from 'react-feather';
 import qs from 'query-string';
 
 import vtkImageData from 'vtk.js/Sources/Common/DataModel/ImageData';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
-
 import Constants from 'vtk.js/Sources/Rendering/Core/ImageMapper/Constants';
 const { SlicingMode } = Constants;
 
-import vtkRenderWindow from 'vtk.js/Sources/Rendering/Core/RenderWindow';
-import vtkRenderer from 'vtk.js/Sources/Rendering/Core/Renderer';
-import vtkOpenGLRenderWindow from 'vtk.js/Sources/Rendering/OpenGL/RenderWindow';
-import vtkRenderWindowInteractor from 'vtk.js/Sources/Rendering/Core/RenderWindowInteractor';
+import MedImgView from './med-img-view'
 
-import vtkImageMapper from 'vtk.js/Sources/Rendering/Core/ImageMapper';
-import vtkImageSlice from 'vtk.js/Sources/Rendering/Core/ImageSlice';
+import {FS, MedImgReader} from 'med-img-reader';
 
-const {FS, MedImgReader} = require('med-img-reader');
 const Url = require('url-parse');
+
+class MedImgViewSideBySide extends React.Component {
+  render() {
+    const {vtkImage, slicingMode1, slicingMode2, maxWidth, maxHeight} = this.props;
+    return (
+      <Col>
+        <Row>
+          <MedImgView id="XY-X" vtkImage={vtkImage} slicingMode={slicingMode1} maxWidth={maxWidth} maxHeight={maxHeight}/>
+          <MedImgView id="XY-Y" vtkImage={vtkImage} slicingMode={slicingMode2} maxWidth={maxWidth} maxHeight={maxHeight}/>
+        </Row>
+      </Col>
+    )
+  }
+}
+
+class MedImgViewAll extends React.Component {
+  render() {
+    const {vtkImage, slicingMode1, slicingMode2, slicingMode3, maxWidth, maxHeight} = this.props;
+    
+    return (
+      <Col>
+        <Row>
+          <MedImgView id="XYZ-X" vtkImage={vtkImage} slicingMode={slicingMode1} maxWidth={maxWidth} maxHeight={maxHeight}/>
+          <MedImgView id="XYZ-Y" vtkImage={vtkImage} slicingMode={slicingMode2} maxWidth={maxWidth} maxHeight={maxHeight}/>
+        </Row>
+        <Row>
+          <MedImgView id="XYZ-Z" vtkImage={vtkImage} slicingMode={slicingMode3} maxWidth={maxWidth} maxHeight={maxHeight}/>
+        </Row>
+      </Col>
+    )
+  }
+}
 
 class MedImgViewer extends Component {
   // static propTypes = {
   //   text: PropTypes.string
   // }
 
-  constructor(){
-    super()
+  constructor(props){
+    super(props)
 
     this.state = {
       instances: [],
-      showSlice: {
-        X: {
-          show: true,
-          variant: 'success'
-        }, 
-        Y: {
-          show: true,
-          variant: 'success'
-        }, 
-        Z: {
-          show: true,
-          variant: 'success'
-        }
-      },
-      progress: 0
+      selectedLayout: 1,
+      progress: 0, 
+      vtkImage: 0,
+      maxWidth: props.maxWidth? props.maxWidth: "100vh",
+      maxHeight: props.maxHeight? props.maxHeight: "100vh"
     }
 
-    this.slices = {
-      X: {
-        SlicingMode: SlicingMode.X
+    const self = this;
+    
+    this.layoutOptions = {
+      1: {
+        name: 'X', 
+        icon: ()=>{return (<Square/>)},
+        layout: ()=>{
+          const {vtkImage, maxWidth, maxHeight} = this.state;
+          // return (<MedImgView vtkImage={vtkImage} slicingMode={SlicingMode.X} maxWidth={maxWidth} maxHeight={maxHeight}/>)
+          return (
+            <MedImgView id="X" vtkImage={vtkImage} slicingMode={SlicingMode.X} maxWidth={maxWidth} maxHeight={maxHeight}/>
+            ) 
+        }
       },
-      Y: {
-        SlicingMode: SlicingMode.Y
+      2: {
+        name: 'Y', 
+        icon: ()=>{return (<Square/>)},
+        layout: ()=>{
+          const {vtkImage, maxWidth, maxHeight} = this.state;
+          return (<MedImgView vtkImage={vtkImage} slicingMode={SlicingMode.Y} maxWidth={maxWidth} maxHeight={maxHeight}/>)
+        }
       },
-      Z: {
-        SlicingMode: SlicingMode.Z
+      3: {
+        name: 'Z', 
+        icon: ()=>{return (<Square/>)},
+        layout: ()=>{
+          const {vtkImage, maxWidth, maxHeight} = this.state;
+          return (<MedImgView vtkImage={vtkImage} slicingMode={SlicingMode.Z} maxWidth={maxWidth} maxHeight={maxHeight}/>)
+        }
+      },
+      4: {
+        name: 'XY', 
+        icon: ()=>{return (<t><Square/><Square/></t>)},
+        layout: ()=>{
+          const {vtkImage, maxWidth, maxHeight} = this.state;
+          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y} maxWidth={maxWidth} maxHeight={maxHeight}/>
+        }
+      },
+      5: {
+        name: 'YZ', 
+        icon: ()=>{return (<t><Square/><Square/></t>)},
+        layout: ()=>{
+          const {vtkImage, maxWidth, maxHeight} = this.state;
+          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.Y} slicingMode2={SlicingMode.Z} maxWidth={maxWidth} maxHeight={maxHeight}/>
+        }
+      },
+      6: {
+        name: 'XZ', 
+        icon: ()=>{return (<t><Square/><Square/></t>)},
+        layout: ()=>{
+          const {vtkImage, maxWidth, maxHeight} = this.state;
+          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Z} maxWidth={maxWidth} maxHeight={maxHeight}/>
+        }
+      },
+      7: {
+        name: 'XYZ', 
+        icon: ()=>{return (<Grid/>)},
+        layout: ()=>{
+          const {vtkImage, maxWidth, maxHeight} = this.state;
+
+          var mHeight = maxHeight;
+
+          if(_.isString(mHeight)){
+            mHeight = Number(mHeight.match(/\d+/g)[0])/2 + mHeight.match(/\D+/g)[0];
+          }else{
+            mHeight /= 2;
+          }
+
+          var mWidth = maxWidth;
+          if(_.isString(maxWidth)){
+            mWidth = Number(mWidth.match(/\d+/g)[0])/2 + mWidth.match(/\D+/g)[0];
+          }else{
+            mWidth /= 2;
+          }
+
+          return <MedImgViewAll vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y} slicingMode3={SlicingMode.Z} maxWidth={mWidth} maxHeight={mHeight}/>
+        }
       }
     };
+      
   }
 
   componentDidMount(){
@@ -89,20 +176,14 @@ class MedImgViewer extends Component {
     }catch(e){
       FS.mkdir(self.medImgDir);
     }
+
+    self.getImageSeries(); 
     
-    this.initializeRenderWindows()
-    .then(function(){
-      self.getImageSeries();  
-    })
   }
 
-  componentDidUpdate(prevProps) {
-    const self = this;
-    if (self.props.location !== prevProps.location) {
-      self.removeImageActors()
-      .then(function(){
-         self.getImageSeries(); 
-      })
+  componentDidUpdate(prevProps){
+    if (this.props.location !== prevProps.location) {
+      this.getImageSeries();
     }
   }
 
@@ -127,7 +208,7 @@ class MedImgViewer extends Component {
           return self.convertToVtkImage(medImgReader);
         })
         .then(function(vtkImg){
-          return self.renderImage(vtkImg);
+          self.setState({...self.state, vtkImage: vtkImg});
         })
         .then(function(){
           return self.setProgressPromise(0);
@@ -172,114 +253,6 @@ class MedImgViewer extends Component {
     imageData.getPointData().setScalars(scalars);
 
     return Promise.resolve(imageData);
-  }
-
-  initializeRenderWindows(){
-
-    return Promise.all(_.map(this.slices, function(slice){
-      try{
-        
-        slice.renderWindow = vtkRenderWindow.newInstance(),
-        slice.renderer = vtkRenderer.newInstance()
-        slice.renderWindow.addRenderer(slice.renderer);
-
-        slice.openglRenderWindow = vtkOpenGLRenderWindow.newInstance();
-        slice.renderWindow.addView(slice.openglRenderWindow);
-        const node = ReactDOM.findDOMNode(slice.ref);
-
-        slice.openglRenderWindow.setContainer(node);
-
-        slice.interactor = vtkRenderWindowInteractor.newInstance();
-
-        const iStyle = medImgInteractorStyleImage.newInstance();
-        iStyle.setInteractionMode('IMAGE_SLICING');
-
-        slice.interactor.setInteractorStyle(
-          iStyle
-        );
-        slice.interactor.setView(slice.openglRenderWindow);
-        slice.interactor.initialize();
-
-        slice.interactor.bindEvents(node);  
-
-        return Promise.resolve(true);
-      }catch(e){
-        return Promise.reject(e);
-      }
-      
-    }))
-  }
-
-  removeImageActors(){
-    try{
-      _.each(this.slices, function(slice){
-        slice.renderer.removeActor(slice.imageActor);
-      });  
-      return Promise.resolve(true);
-    }catch(e){
-      return Promise.reject(e);
-    }
-    
-    
-  }
-
-  renderImage(image){
-
-    const data = image;
-    const dataRange = data
-      .getPointData()
-      .getScalars()
-      .getRange();
-    const extent = data.getExtent();
-
-    _.each(this.slices, function(slice){
-
-      const imageMapper = vtkImageMapper.newInstance();
-      imageMapper.setInputData(data);
-      imageMapper.setSliceAtFocalPoint(true);
-      imageMapper.setSlicingMode(slice.SlicingMode);
-
-      const imageActor = vtkImageSlice.newInstance();
-      imageActor.setMapper(imageMapper);
-      imageActor.getProperty().setColorWindow(dataRange[1] - dataRange[0]);
-      imageActor.getProperty().setColorLevel(dataRange[0] + (dataRange[1] - dataRange[0]) * .2);
-
-      slice.renderer.addActor(imageActor);
-
-      const camera = slice.renderer.getActiveCamera();
-      const position = camera.getFocalPoint();
-      // offset along the slicing axis
-      const normal = imageMapper.getSlicingModeNormal();
-      position[0] += normal[0];
-      position[1] += normal[1];
-      position[2] += normal[2];
-      camera.setPosition(...position);
-      switch (imageMapper.getSlicingMode()) {
-        case SlicingMode.X:
-          camera.setViewUp([0, 1, 0]);
-          break;
-        case SlicingMode.Y:
-          camera.setViewUp([1, 0, 0]);
-          break;
-        case SlicingMode.Z:
-          camera.setViewUp([0, 1, 0]);
-          break;
-        default:
-      }
-      camera.setParallelProjection(true);
-
-      slice.imageMapper = imageMapper;
-      slice.imageActor = imageActor;
-
-      slice.renderer.resetCamera();
-      slice.renderWindow.render();
-    });
-  }
-
-  renderWindows(){
-    _.each(this.slices, function(slice){
-      slice.renderWindow.render();
-    })
   }
 
   setProgressPromise(progress){
@@ -339,94 +312,59 @@ class MedImgViewer extends Component {
     });
   }
 
-  getSliceX(){
-    const {showSlice} = this.state;
-    return (<Col style={{display: showSlice.X.show? '': 'none'}}>
-          <Card>
-            <Card.Body ref={(node) => {this.slices.X.ref = node}}>
-            </Card.Body>
-          </Card>
-        </Col>)
+  getLayoutOptions(){
+    const self = this;
+    return _.map(this.layoutOptions, function(opt, key){
+      return (<Dropdown.Item eventKey={key} onClick={(e)=>{self.setLayout(key)}}>{opt.name} {opt.icon()}</Dropdown.Item>);
+    })
   }
 
-  getSliceY(){
-    const {showSlice} = this.state;
-    
-    return (<Col style={{display: showSlice.Y.show? '': 'none'}}>
-        <Card>
-          <Card.Body ref={(node) => {this.slices.Y.ref = node}}>
-          </Card.Body>
-        </Card>
-      </Col>)  
+  setLayout(key){
+    this.setState({...this.state, selectedLayout: key});
   }
 
-  getSliceZ(){
-    const {showSlice} = this.state;
-    
-    return (<Col style={{display: showSlice.Z.show? '': 'none'}}>
-          <Card>
-            <Card.Body ref={(node) => {this.slices.Z.ref = node}}>
-            </Card.Body>
-          </Card>
-        </Col>)
-    
+  getLayout(){
+    const {selectedLayout} = this.state;
+    const layoutOpt = this.layoutOptions[selectedLayout];
+    return layoutOpt.layout();
   }
 
-  changeShowSlice(slice){
+  getProgressOrImage(){
     const {
-      showSlice
-    } = this.state;
+      progress
+    } = this.state
 
-    showSlice[slice].show = !showSlice[slice].show;
-    if(showSlice[slice].show){
-      showSlice[slice].variant = "success";
+    if(progress){
+      return (
+        <Col>
+          <ProgressBar animated now={progress}/>
+        </Col>);
     }else{
-      showSlice[slice].variant = "danger";
+      return this.getLayout();
     }
-
-    this.setState({...this.state, showSlice: showSlice}, ()=>{this.renderWindows()});
-  }
-
-  getEye(show){
-    if(show){
-      return (<EyeOff/>);
-    }else{
-      return (<Eye/>);
-    }
+    
   }
 
   render() {
-    const {
-      location
-    } = this.props;
-
-    const {
-      showSlice,
-      progress
-    } = this.state
     
     return (
-      <Container fluid="true">
-        <Row>
-          <Col>
-            <ProgressBar animated now={progress}/>
-          </Col>
-        </Row>
+      <Container fluid="true" style={{padding: 0}}>
         <Row>
           <Col>
             <ButtonToolbar aria-label="Show slices">
-              <ButtonGroup className="mr-2">
-                <Button variant={showSlice.X.variant} onClick={(e)=>{this.changeShowSlice('X')}}>X {this.getEye(showSlice.X.show)}</Button>
-                <Button variant={showSlice.Y.variant} onClick={(e)=>{this.changeShowSlice('Y')}}>Y {this.getEye(showSlice.Y.show)}</Button>
-                <Button variant={showSlice.Z.variant} onClick={(e)=>{this.changeShowSlice('Z')}}>Z {this.getEye(showSlice.Z.show)}</Button>
-              </ButtonGroup>
+              <Dropdown>
+                <Dropdown.Toggle variant="success" id="dropdown-basic">
+                  <Layout/>
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  {this.getLayoutOptions()}
+                </Dropdown.Menu>
+              </Dropdown>
             </ButtonToolbar>
           </Col>
         </Row>
         <Row>
-          {this.getSliceX()}
-          {this.getSliceY()}
-          {this.getSliceZ()}
+          {this.getProgressOrImage()}
         </Row>
       </Container>
       )
