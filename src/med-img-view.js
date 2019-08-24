@@ -118,6 +118,7 @@ class MedImgView extends Component {
         this.imageActor.setMapper(this.imageMapper);
         this.imageActor.getProperty().setColorWindow(dataRange[1]);
         this.imageActor.getProperty().setColorLevel(dataRange[0] + (dataRange[1] - dataRange[0]) * .25);
+        this.imageActor.getProperty().setInterpolationTypeToNearest();
         this.renderer.addActor(this.imageActor);
 
         const camera = this.renderer.getActiveCamera();
@@ -141,12 +142,12 @@ class MedImgView extends Component {
             position[0] += normal[0];
             position[1] += normal[1];
             position[2] += normal[2];
-            camera.setViewUp([0, -1, 0]);
+            camera.setViewUp([-1, -1, 0]);
             break;
           default:
         }
         camera.setPosition(...position);
-        camera.setParallelProjection(true);
+        // camera.setParallelProjection(true);
         this.renderer.resetCamera();
       }
     }

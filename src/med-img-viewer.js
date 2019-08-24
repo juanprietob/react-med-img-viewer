@@ -201,8 +201,16 @@ class MedImgViewer extends Component {
     .then(function(res){
       self.setState({...self.state, seriesid: seriesid, instances: res.data}, ()=>{
         self.getDicomFiles()
-        .then(function(series_dir){
-          return self.readSeries(series_dir);
+        .then(function(series_description){
+          if(series_description.modality[0] == "MR"){
+            return self.readSeries(series_description.series_dir);
+          }else{
+            if(series_description.files.length > 0){
+              return self.readImage(series_description.files[0].filename);  
+            }else{
+              return Promise.reject("No files found!");
+            }
+          }
         })
         .then(function(medImgReader){
           return self.convertToVtkImage(medImgReader);
@@ -224,6 +232,20 @@ class MedImgViewer extends Component {
       const medImgReader = new MedImgReader();
       medImgReader.SetDirectory(series_dir);
       medImgReader.ReadDICOMDirectory();    
+      return Promise.resolve(medImgReader);
+    }catch(e){
+      return Promise.reject(e);
+    }   
+
+  }
+
+  readImage(imagefilename){
+    const self = this;
+
+    try{
+      const medImgReader = new MedImgReader();
+      medImgReader.SetFilename(imagefilename);
+      medImgReader.ReadImage();
       return Promise.resolve(medImgReader);
     }catch(e){
       return Promise.reject(e);
@@ -270,6 +292,12 @@ class MedImgViewer extends Component {
 
     var series_dir = self.medImgDir + '/' + seriesid;
 
+    var series_description = {
+      modality: [],
+      files: [],
+      series_dir
+    };
+
     try{
       FS.stat(series_dir);
     }catch(e){
@@ -282,6 +310,7 @@ class MedImgViewer extends Component {
     return self.setProgressPromise(progress)
     .then(function(){
       return Promise.all(_.map(instances, function(instance){
+
         return Promise.all(_.map(instance.attachments, function(att){
 
           progress += progressIncrement;
@@ -296,7 +325,9 @@ class MedImgViewer extends Component {
               var split_url = url.pathname.split("/");
               var img_filepath = series_dir + '/' + split_url[split_url.length - 1];
               try{
-                FS.writeFile(img_filepath, new Uint8Array(res.data), { encoding: 'binary' });  
+                FS.writeFile(img_filepath, new Uint8Array(res.data), { encoding: 'binary' });
+                series_description.modality.push(instance.modality);
+                series_description.files.push({filename: img_filepath, modality: instance.modality});
               }catch(e){
                 console.error(e);
               }
@@ -307,7 +338,8 @@ class MedImgViewer extends Component {
         }));
       }))
       .then(function(){
-        return series_dir;
+        series_description.modality = _.uniq(series_description.modality);
+        return series_description;
       });
     });
   }
