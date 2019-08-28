@@ -6,7 +6,6 @@ import { withRouter } from 'react-router-dom';
 
 import './styles.css'
 
-import MedImgService from './med-img-service';
 import medImgInteractorStyleImage from './med-img-interactor-style-image';
 
 import _ from 'underscore';
@@ -15,7 +14,7 @@ import _ from 'underscore';
 
 import {Row, Card, Col, Container, ButtonToolbar, ButtonGroup, Button, ProgressBar, Dropdown} from 'react-bootstrap';
 
-import {Grid, Layout, Columns, Square, EyeOff, Eye} from 'react-feather';
+import {Grid, Layout, Columns, Square, EyeOff, Eye, File} from 'react-feather';
 import qs from 'query-string';
 
 import vtkImageData from 'vtk.js/Sources/Common/DataModel/ImageData';
@@ -25,7 +24,8 @@ const { SlicingMode } = Constants;
 
 import MedImgView from './med-img-view'
 
-import {FS, MedImgReader} from 'med-img-reader';
+const ISELECTRON = window && window.require && window.require('electron');
+const {FS, MedImgReader} = ISELECTRON? window.require('electron').remote.require('med-img-reader'): require('med-img-reader');
 
 const Url = require('url-parse');
 
@@ -75,8 +75,11 @@ class MedImgViewer extends Component {
       progress: 0, 
       vtkImage: 0,
       maxWidth: props.maxWidth? props.maxWidth: "100vh",
-      maxHeight: props.maxHeight? props.maxHeight: "100vh"
+      maxHeight: props.maxHeight? props.maxHeight: "100vh",
+      filenames: []
     }
+
+    this.ref = {};
 
     const self = this;
     
@@ -110,7 +113,7 @@ class MedImgViewer extends Component {
       },
       4: {
         name: 'XY', 
-        icon: ()=>{return (<t><Square/><Square/></t>)},
+        icon: ()=>{return (<Row><Square/><Square/></Row>)},
         layout: ()=>{
           const {vtkImage, maxWidth, maxHeight} = this.state;
           return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y} maxWidth={maxWidth} maxHeight={maxHeight}/>
@@ -118,7 +121,7 @@ class MedImgViewer extends Component {
       },
       5: {
         name: 'YZ', 
-        icon: ()=>{return (<t><Square/><Square/></t>)},
+        icon: ()=>{return (<Row><Square/><Square/></Row>)},
         layout: ()=>{
           const {vtkImage, maxWidth, maxHeight} = this.state;
           return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.Y} slicingMode2={SlicingMode.Z} maxWidth={maxWidth} maxHeight={maxHeight}/>
@@ -126,7 +129,7 @@ class MedImgViewer extends Component {
       },
       6: {
         name: 'XZ', 
-        icon: ()=>{return (<t><Square/><Square/></t>)},
+        icon: ()=>{return (<Row><Square/><Square/></Row>)},
         layout: ()=>{
           const {vtkImage, maxWidth, maxHeight} = this.state;
           return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Z} maxWidth={maxWidth} maxHeight={maxHeight}/>
@@ -161,24 +164,16 @@ class MedImgViewer extends Component {
   }
 
   componentDidMount(){
-
-    // this.jwtauth = new JWTAuthService();
-    // this.jwtauth.setHttp(this.props.http);
+    
     const self = this;
 
-    this.medimgservice = new MedImgService();
-    this.medimgservice.setHttp(this.props.http);
-
     self.medImgDir = '/med-img-reader';
-
+    
     try{
       FS.stat(self.medImgDir);
     }catch(e){
       FS.mkdir(self.medImgDir);
     }
-
-    self.getImageSeries(); 
-    
   }
 
   componentDidUpdate(prevProps){
@@ -187,42 +182,29 @@ class MedImgViewer extends Component {
     }
   }
 
-  getImageSeries(){
-    const {
-      location
-    } = this.props;
-
+  read(){
     const self = this;
+    const {filenames} = self.state;
+    
+    var readImg;
+    if(filenames.length > 1){
+      readImg = self.readSeries(filenames[0]);
+    }else if(filenames.length == 1){
+      readImg = self.readImage(filenames[0]);
+    }else{
+      readImg = Promise.reject("You need to select a filename");
+    }
 
-    const search = qs.parse(location.search);
-    var seriesid = search.seriesid;
-
-    return self.medimgservice.getInstances(seriesid)
-    .then(function(res){
-      self.setState({...self.state, seriesid: seriesid, instances: res.data}, ()=>{
-        self.getDicomFiles()
-        .then(function(series_description){
-          if(series_description.modality[0] == "MR"){
-            return self.readSeries(series_description.series_dir);
-          }else{
-            if(series_description.files.length > 0){
-              return self.readImage(series_description.files[0].filename);  
-            }else{
-              return Promise.reject("No files found!");
-            }
-          }
-        })
-        .then(function(medImgReader){
-          return self.convertToVtkImage(medImgReader);
-        })
-        .then(function(vtkImg){
-          self.setState({...self.state, vtkImage: vtkImg});
-        })
-        .then(function(){
-          return self.setProgressPromise(0);
-        });
-      });
-    });
+    readImg
+    .then(function(medImgReader){
+      return self.convertToVtkImage(medImgReader);
+    })
+    .then(function(vtkImg){
+      self.setState({...self.state, vtkImage: vtkImg});
+    })
+    .catch(function(err){
+      console.error(err);
+    })
   }
 
   readSeries(series_dir){
@@ -277,73 +259,6 @@ class MedImgViewer extends Component {
     return Promise.resolve(imageData);
   }
 
-  setProgressPromise(progress){
-    const self = this;
-    return new Promise(function(resolve, reject){
-      self.setState({
-        ...self.state, progress
-      }, resolve);
-    });
-  }
-
-  getDicomFiles(){
-    const self = this;
-    const {seriesid, instances} = self.state;
-
-    var series_dir = self.medImgDir + '/' + seriesid;
-
-    var series_description = {
-      modality: [],
-      files: [],
-      series_dir
-    };
-
-    try{
-      FS.stat(series_dir);
-    }catch(e){
-      FS.mkdir(series_dir);
-    }
-
-    var progress = 0;
-    var progressIncrement = 1/instances.length * 100;
-
-    return self.setProgressPromise(progress)
-    .then(function(){
-      return Promise.all(_.map(instances, function(instance){
-
-        return Promise.all(_.map(instance.attachments, function(att){
-
-          progress += progressIncrement;
-
-          return self.setProgressPromise(progress)
-          .then(function(){
-            return self.medimgservice.getDicomBuffer(instance.instanceid, att);
-          })
-          .then(function(res){
-            if(res.config && res.config.url && res.data){
-              var url = new Url(res.config.url);
-              var split_url = url.pathname.split("/");
-              var img_filepath = series_dir + '/' + split_url[split_url.length - 1];
-              try{
-                FS.writeFile(img_filepath, new Uint8Array(res.data), { encoding: 'binary' });
-                series_description.modality.push(instance.modality);
-                series_description.files.push({filename: img_filepath, modality: instance.modality});
-              }catch(e){
-                console.error(e);
-              }
-            }else{
-              console.error(res);
-            }
-          });
-        }));
-      }))
-      .then(function(){
-        series_description.modality = _.uniq(series_description.modality);
-        return series_description;
-      });
-    });
-  }
-
   getLayoutOptions(){
     const self = this;
     return _.map(this.layoutOptions, function(opt, key){
@@ -361,20 +276,54 @@ class MedImgViewer extends Component {
     return layoutOpt.layout();
   }
 
-  getProgressOrImage(){
-    const {
-      progress
-    } = this.state
+  // writeFileLocal(file){
+  //   const self = this;
 
-    if(progress){
-      return (
-        <Col>
-          <ProgressBar animated now={progress}/>
-        </Col>);
-    }else{
-      return this.getLayout();
-    }
+  //   return new Promise(function(resolve, reject){
+  //     const reader = new FileReader();
+  //     reader.onload = (e)=>{
+  //       FS.writeFile(self.medImgDir + '/temp.nrrd', new Uint8Array(e.target.result), { encoding: 'binary' });
+  //       resolve(self.medImgDir + '/temp.nrrd');
+  //     };
+  //     reader.readAsArrayBuffer(file);
+  //   });
+  // }
+
+  handleFileSelected(e){
+    const self = this;
+
+    const files = e.target.files;
+
+    self.setState({...self.state, filenames: _.map(files, (f)=>{return f.path})}, 
+      ()=>{
+        self.read();
+    });
+  }
+
+  getToolBar(){
+    const self = this;
     
+    var openfile = '';
+    if(ISELECTRON){
+      openfile = (<Button variant="success" onClick={()=>{
+        const {imgFileSelector} = self.ref;
+        if(imgFileSelector){
+          imgFileSelector.click();
+        }
+      }}><File/><input ref={node => self.ref.imgFileSelector = node} type="file" onChange={(e)=>{self.handleFileSelected(e)}} style={{display:'none'}}/></Button>)
+    }
+
+    return (<ButtonToolbar aria-label="Show slices">
+      {openfile}
+      <Dropdown>
+        <Dropdown.Toggle variant="success" id="dropdown-basic">
+          <Layout/>
+        </Dropdown.Toggle>
+        <Dropdown.Menu>
+          {this.getLayoutOptions()}
+        </Dropdown.Menu>
+      </Dropdown>
+    </ButtonToolbar>)
   }
 
   render() {
@@ -383,42 +332,16 @@ class MedImgViewer extends Component {
       <Container fluid="true" style={{padding: 0}}>
         <Row>
           <Col>
-            <ButtonToolbar aria-label="Show slices">
-              <Dropdown>
-                <Dropdown.Toggle variant="success" id="dropdown-basic">
-                  <Layout/>
-                </Dropdown.Toggle>
-                <Dropdown.Menu>
-                  {this.getLayoutOptions()}
-                </Dropdown.Menu>
-              </Dropdown>
-            </ButtonToolbar>
+            {this.getToolBar()}
           </Col>
         </Row>
         <Row>
-          {this.getProgressOrImage()}
+          {this.getLayout()}
         </Row>
       </Container>
       )
   }
 }
 
-const mapStateToProps = (state, ownProps) => {
-  return {
-    http: state.jwtAuthReducer.http
-  }
-}
-
-// const mapDispatchToProps = (dispatch) => {
-//   return {
-//     showJobDetail: params => {
-//       dispatch({
-//         type: 'show-job-detail',
-//         job: job
-//       });
-//     }
-//   }
-// }
-
-export default withRouter(connect(mapStateToProps)(MedImgViewer));
+export default MedImgViewer;
 
