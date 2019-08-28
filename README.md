@@ -17,9 +17,12 @@ export NODE_OPTIONS=--max_old_space_size=8192
 ## Usage
 
 ```jsx
-import MedImgViewer from 'med-img-viewer'
+import {MedImgViewer} from 'med-img-viewer'
 
+```
 
+```jsx
+  <MedImgViewer/>
 ```
 
 ## License
