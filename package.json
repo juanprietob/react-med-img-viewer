@@ -1,6 +1,6 @@
 {
   "name": "react-med-img-viewer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React component for medical image visualization. Interacts with the med-img server",
   "author": "juanprietob",
   "license": "MIT",
