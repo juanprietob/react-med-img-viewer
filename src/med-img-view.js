@@ -25,6 +25,11 @@ class MedImgView extends Component {
 
   constructor(props){
     super(props)
+    this.imageActor = 0;
+    this.imageMapper = 0;
+    this.renderWindow = 0;
+    this.renderer = 0;
+    this.openglRenderWindow = 0;
   }
 
   componentDidMount(){
@@ -43,11 +48,11 @@ class MedImgView extends Component {
       this.removeImageActors();
     }
     if(this.props.slicingMode !== prevProps.slicingMode){
-      var colorWindow = this.imageActor.getProperty().getColorWindow();
-      var colorLevel = this.imageActor.getProperty().getColorLevel();
       this.removeImageActors();
       this.initializeActor();
       if(this.imageActor){
+        var colorWindow = this.imageActor.getProperty().getColorWindow();
+        var colorLevel = this.imageActor.getProperty().getColorLevel();
         this.imageActor.getProperty().setColorWindow(colorWindow);
         this.imageActor.getProperty().setColorLevel(colorLevel);
       }
@@ -118,7 +123,7 @@ class MedImgView extends Component {
         this.imageActor.setMapper(this.imageMapper);
         this.imageActor.getProperty().setColorWindow(dataRange[1]);
         this.imageActor.getProperty().setColorLevel(dataRange[0] + (dataRange[1] - dataRange[0]) * .25);
-        this.imageActor.getProperty().setInterpolationTypeToNearest();
+        this.imageActor.getProperty().setInterpolationTypeToLinear();
         this.renderer.addActor(this.imageActor);
 
         const camera = this.renderer.getActiveCamera();
@@ -127,9 +132,9 @@ class MedImgView extends Component {
         const normal = this.imageMapper.getSlicingModeNormal();
         switch (this.imageMapper.getSlicingMode()) {
           case SlicingMode.X:
-            position[0] += normal[0];
-            position[1] += normal[1];
-            position[2] += normal[2];
+            position[0] -= normal[0];
+            position[1] -= normal[1];
+            position[2] -= normal[2];
             camera.setViewUp([0, 0, 1]);
             break;
           case SlicingMode.Y:
@@ -139,10 +144,10 @@ class MedImgView extends Component {
             camera.setViewUp([0, 1, 0]);
             break;
           case SlicingMode.Z:
-            position[0] += normal[0];
-            position[1] += normal[1];
-            position[2] += normal[2];
-            camera.setViewUp([-1, -1, 0]);
+            position[0] -= normal[0];
+            position[1] -= normal[1];
+            position[2] -= normal[2];
+            camera.setViewUp([0, -1, 0]);
             break;
           default:
         }

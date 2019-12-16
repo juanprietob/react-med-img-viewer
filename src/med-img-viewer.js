@@ -24,12 +24,9 @@ const { SlicingMode } = Constants;
 
 import MedImgView from './med-img-view'
 
-const ISELECTRON = window && window.require && window.require('electron');
-const {FS, MedImgReader} = ISELECTRON? window.require('electron').remote.require('med-img-reader'): require('med-img-reader');
-
 const Url = require('url-parse');
 
-class MedImgViewSideBySide extends React.Component {
+class MedImgViewSideBySide extends Component {
   render() {
     const {vtkImage, slicingMode1, slicingMode2, maxWidth, maxHeight} = this.props;
     return (
@@ -43,7 +40,7 @@ class MedImgViewSideBySide extends React.Component {
   }
 }
 
-class MedImgViewAll extends React.Component {
+class MedImgViewAll extends Component {
   render() {
     const {vtkImage, slicingMode1, slicingMode2, slicingMode3, maxWidth, maxHeight} = this.props;
     
@@ -67,13 +64,14 @@ class MedImgViewer extends Component {
   // }
 
   constructor(props){
+
     super(props)
 
     this.state = {
       instances: [],
-      selectedLayout: 1,
+      selectedLayout: props.selectedLayout? props.selectedLayout: 1,
       progress: 0, 
-      vtkImage: 0,
+      vtkImage: props.vtkImagePrimary? props.vtkImagePrimary: 0,
       maxWidth: props.maxWidth? props.maxWidth: "100vh",
       maxHeight: props.maxHeight? props.maxHeight: "100vh",
       filenames: []
@@ -163,100 +161,15 @@ class MedImgViewer extends Component {
       
   }
 
-  componentDidMount(){
-    
-    const self = this;
-
-    self.medImgDir = '/med-img-reader';
-    
-    try{
-      FS.stat(self.medImgDir);
-    }catch(e){
-      FS.mkdir(self.medImgDir);
-    }
-  }
-
   componentDidUpdate(prevProps){
-    if (this.props.location !== prevProps.location) {
-      this.getImageSeries();
-    }
-  }
-
-  read(){
-    const self = this;
-    const {filenames} = self.state;
     
-    var readImg;
-    if(filenames.length > 1){
-      readImg = self.readSeries(filenames[0]);
-    }else if(filenames.length == 1){
-      readImg = self.readImage(filenames[0]);
-    }else{
-      readImg = Promise.reject("You need to select a filename");
+    if(this.props.vtkImagePrimary !== prevProps.vtkImagePrimary){
+      this.setState({...this.state, vtkImage: this.props.vtkImagePrimary});
     }
 
-    readImg
-    .then(function(medImgReader){
-      return self.convertToVtkImage(medImgReader);
-    })
-    .then(function(vtkImg){
-      self.setState({...self.state, vtkImage: vtkImg});
-    })
-    .catch(function(err){
-      console.error(err);
-    })
-  }
-
-  readSeries(series_dir){
-    const self = this;
-
-    try{
-      const medImgReader = new MedImgReader();
-      medImgReader.SetDirectory(series_dir);
-      medImgReader.ReadDICOMDirectory();    
-      return Promise.resolve(medImgReader);
-    }catch(e){
-      return Promise.reject(e);
-    }   
-
-  }
-
-  readImage(imagefilename){
-    const self = this;
-
-    try{
-      const medImgReader = new MedImgReader();
-      medImgReader.SetFilename(imagefilename);
-      medImgReader.ReadImage();
-      return Promise.resolve(medImgReader);
-    }catch(e){
-      return Promise.reject(e);
-    }   
-
-  }
-
-  convertToVtkImage(medImgReader) {
-
-    const vtkImage = {
-      origin: medImgReader.GetOrigin(),
-      spacing: medImgReader.GetSpacing()
-    };
-
-    // Create VTK Image Data
-    const imageData = vtkImageData.newInstance(vtkImage);
-
-    // create VTK image data
-    const scalars = vtkDataArray.newInstance({
-      name: 'Scalars',
-      values: medImgReader.GetImageBuffer(),
-      numberOfComponents: medImgReader.GetNumberOfComponentsPerPixel(),
-    });
-
-    imageData.setDirection(...medImgReader.GetDirection());
-    imageData.setDimensions(...medImgReader.GetDimensions());
-    imageData.getPointData().setScalars(scalars);
-
-    return Promise.resolve(imageData);
+    if(this.props.selectedLayout !== prevProps.selectedLayout){
+      this.setState({...this.state, selectedLayout: this.props.selectedLayout});
+    }
   }
 
   getLayoutOptions(){
@@ -276,65 +189,30 @@ class MedImgViewer extends Component {
     return layoutOpt.layout();
   }
 
-  // writeFileLocal(file){
-  //   const self = this;
-
-  //   return new Promise(function(resolve, reject){
-  //     const reader = new FileReader();
-  //     reader.onload = (e)=>{
-  //       FS.writeFile(self.medImgDir + '/temp.nrrd', new Uint8Array(e.target.result), { encoding: 'binary' });
-  //       resolve(self.medImgDir + '/temp.nrrd');
-  //     };
-  //     reader.readAsArrayBuffer(file);
-  //   });
-  // }
-
-  handleFileSelected(e){
-    const self = this;
-
-    const files = e.target.files;
-
-    self.setState({...self.state, filenames: _.map(files, (f)=>{return f.path})}, 
-      ()=>{
-        self.read();
-    });
-  }
-
   getToolBar(){
     const self = this;
-    
-    var openfile = '';
-    if(ISELECTRON){
-      openfile = (<Button variant="success" onClick={()=>{
-        const {imgFileSelector} = self.ref;
-        if(imgFileSelector){
-          imgFileSelector.click();
-        }
-      }}><File/><input ref={node => self.ref.imgFileSelector = node} type="file" onChange={(e)=>{self.handleFileSelected(e)}} style={{display:'none'}}/></Button>)
-    }
+    const {showToolBar} = self.props;
 
-    return (<ButtonToolbar aria-label="Show slices">
-      {openfile}
-      <Dropdown>
-        <Dropdown.Toggle variant="success" id="dropdown-basic">
-          <Layout/>
-        </Dropdown.Toggle>
-        <Dropdown.Menu>
-          {this.getLayoutOptions()}
-        </Dropdown.Menu>
-      </Dropdown>
-    </ButtonToolbar>)
+    if(showToolBar){
+      return (<ButtonToolbar aria-label="Show slices">
+        <Dropdown>
+          <Dropdown.Toggle variant="success" id="dropdown-basic">
+            <Layout/>
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            {this.getLayoutOptions()}
+          </Dropdown.Menu>
+        </Dropdown>
+      </ButtonToolbar>)  
+    }else{
+      return '';
+    }
   }
 
   render() {
-    
     return (
       <Container fluid="true" style={{padding: 0}}>
-        <Row>
-          <Col>
-            {this.getToolBar()}
-          </Col>
-        </Row>
+        {this.getToolBar()}
         <Row>
           {this.getLayout()}
         </Row>
