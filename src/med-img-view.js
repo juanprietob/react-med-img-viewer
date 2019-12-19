@@ -149,16 +149,16 @@ class MedImgView extends Component {
         const normal = this.imageMapper.getSlicingModeNormal();
         switch (this.imageMapper.getSlicingMode()) {
           case SlicingMode.X:
-            position[0] -= normal[0];
-            position[1] -= normal[1];
-            position[2] -= normal[2];
-            camera.setViewUp([0, 0, -1]);
+            position[0] += normal[0];
+            position[1] += normal[1];
+            position[2] += normal[2];
+            camera.setViewUp([0, 0, 1]);
             break;
           case SlicingMode.Y:
-            position[0] -= normal[0];
-            position[1] -= normal[1];
-            position[2] -= normal[2];
-            camera.setViewUp([-1, 0, 0]);
+            position[0] += normal[0];
+            position[1] += normal[1];
+            position[2] += normal[2];
+            camera.setViewUp([1, 0, 0]);
             break;
           case SlicingMode.Z:
             position[0] -= normal[0];
