@@ -28,12 +28,12 @@ const Url = require('url-parse');
 
 class MedImgViewSideBySide extends Component {
   render() {
-    const {vtkImage, slicingMode1, slicingMode2, maxWidth, maxHeight} = this.props;
+    const {vtkImage, slicingMode1, slicingMode2} = this.props;
     return (
       <Col>
         <Row>
-          <MedImgView id="XY-X" vtkImage={vtkImage} slicingMode={slicingMode1} maxWidth={maxWidth} maxHeight={maxHeight}/>
-          <MedImgView id="XY-Y" vtkImage={vtkImage} slicingMode={slicingMode2} maxWidth={maxWidth} maxHeight={maxHeight}/>
+          <MedImgView id="XY-X" vtkImage={vtkImage} slicingMode={slicingMode1}/>
+          <MedImgView id="XY-Y" vtkImage={vtkImage} slicingMode={slicingMode2}/>
         </Row>
       </Col>
     )
@@ -42,16 +42,16 @@ class MedImgViewSideBySide extends Component {
 
 class MedImgViewAll extends Component {
   render() {
-    const {vtkImage, slicingMode1, slicingMode2, slicingMode3, maxWidth, maxHeight} = this.props;
+    const {vtkImage, slicingMode1, slicingMode2, slicingMode3} = this.props;
     
     return (
       <Col>
-        <Row>
-          <MedImgView id="XYZ-X" vtkImage={vtkImage} slicingMode={slicingMode1} maxWidth={maxWidth} maxHeight={maxHeight}/>
-          <MedImgView id="XYZ-Y" vtkImage={vtkImage} slicingMode={slicingMode2} maxWidth={maxWidth} maxHeight={maxHeight}/>
+        <Row style={{maxHeight: "40%"}}>
+          <MedImgView id="XYZ-X" vtkImage={vtkImage} slicingMode={slicingMode1}/>
+          <MedImgView id="XYZ-Y" vtkImage={vtkImage} slicingMode={slicingMode2}/>
         </Row>
-        <Row>
-          <MedImgView id="XYZ-Z" vtkImage={vtkImage} slicingMode={slicingMode3} maxWidth={maxWidth} maxHeight={maxHeight}/>
+        <Row style={{maxHeight: "60%"}}>
+          <MedImgView id="XYZ-Z" vtkImage={vtkImage} slicingMode={slicingMode3}/>
         </Row>
       </Col>
     )
@@ -72,9 +72,8 @@ class MedImgViewer extends Component {
       selectedLayout: props.selectedLayout? props.selectedLayout: 1,
       progress: 0, 
       vtkImage: props.vtkImagePrimary? props.vtkImagePrimary: 0,
-      maxWidth: props.maxWidth? props.maxWidth: "100vh",
-      maxHeight: props.maxHeight? props.maxHeight: "100vh",
-      filenames: []
+      filenames: [],
+      style: props.style? props.style: {}
     }
 
     this.ref = {};
@@ -86,10 +85,9 @@ class MedImgViewer extends Component {
         name: 'X', 
         icon: ()=>{return (<Square/>)},
         layout: ()=>{
-          const {vtkImage, maxWidth, maxHeight} = this.state;
-          // return (<MedImgView vtkImage={vtkImage} slicingMode={SlicingMode.X} maxWidth={maxWidth} maxHeight={maxHeight}/>)
+          const {vtkImage} = this.state;
           return (
-            <MedImgView id="X" vtkImage={vtkImage} slicingMode={SlicingMode.X} maxWidth={maxWidth} maxHeight={maxHeight}/>
+            <MedImgView id="X" vtkImage={vtkImage} slicingMode={SlicingMode.X}/>
             ) 
         }
       },
@@ -97,64 +95,49 @@ class MedImgViewer extends Component {
         name: 'Y', 
         icon: ()=>{return (<Square/>)},
         layout: ()=>{
-          const {vtkImage, maxWidth, maxHeight} = this.state;
-          return (<MedImgView vtkImage={vtkImage} slicingMode={SlicingMode.Y} maxWidth={maxWidth} maxHeight={maxHeight}/>)
+          const {vtkImage} = this.state;
+          return (<MedImgView vtkImage={vtkImage} slicingMode={SlicingMode.Y}/>)
         }
       },
       3: {
         name: 'Z', 
         icon: ()=>{return (<Square/>)},
         layout: ()=>{
-          const {vtkImage, maxWidth, maxHeight} = this.state;
-          return (<MedImgView vtkImage={vtkImage} slicingMode={SlicingMode.Z} maxWidth={maxWidth} maxHeight={maxHeight}/>)
+          const {vtkImage} = this.state;
+          return (<MedImgView vtkImage={vtkImage} slicingMode={SlicingMode.Z}/>)
         }
       },
       4: {
         name: 'XY', 
         icon: ()=>{return (<Row><Square/><Square/></Row>)},
         layout: ()=>{
-          const {vtkImage, maxWidth, maxHeight} = this.state;
-          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y} maxWidth={maxWidth} maxHeight={maxHeight}/>
+          const {vtkImage} = this.state;
+          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y}/>
         }
       },
       5: {
         name: 'YZ', 
         icon: ()=>{return (<Row><Square/><Square/></Row>)},
         layout: ()=>{
-          const {vtkImage, maxWidth, maxHeight} = this.state;
-          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.Y} slicingMode2={SlicingMode.Z} maxWidth={maxWidth} maxHeight={maxHeight}/>
+          const {vtkImage} = this.state;
+          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.Y} slicingMode2={SlicingMode.Z}/>
         }
       },
       6: {
         name: 'XZ', 
         icon: ()=>{return (<Row><Square/><Square/></Row>)},
         layout: ()=>{
-          const {vtkImage, maxWidth, maxHeight} = this.state;
-          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Z} maxWidth={maxWidth} maxHeight={maxHeight}/>
+          const {vtkImage} = this.state;
+          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Z}/>
         }
       },
       7: {
         name: 'XYZ', 
         icon: ()=>{return (<Grid/>)},
         layout: ()=>{
-          const {vtkImage, maxWidth, maxHeight} = this.state;
+          const {vtkImage} = this.state;
 
-          var mHeight = maxHeight;
-
-          if(_.isString(mHeight)){
-            mHeight = Number(mHeight.match(/\d+/g)[0])/2 + mHeight.match(/\D+/g)[0];
-          }else{
-            mHeight /= 2;
-          }
-
-          var mWidth = maxWidth;
-          if(_.isString(maxWidth)){
-            mWidth = Number(mWidth.match(/\d+/g)[0])/2 + mWidth.match(/\D+/g)[0];
-          }else{
-            mWidth /= 2;
-          }
-
-          return <MedImgViewAll vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y} slicingMode3={SlicingMode.Z} maxWidth={mWidth} maxHeight={mHeight}/>
+          return <MedImgViewAll vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y} slicingMode3={SlicingMode.Z}/>
         }
       }
     };
@@ -210,8 +193,10 @@ class MedImgViewer extends Component {
   }
 
   render() {
+    const {style} = this.state;
+
     return (
-      <Container fluid="true" style={{padding: 0}}>
+      <Container fluid="true" style={style}>
         {this.getToolBar()}
         <Row>
           {this.getLayout()}

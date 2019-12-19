@@ -30,6 +30,9 @@ class MedImgView extends Component {
     this.renderWindow = 0;
     this.renderer = 0;
     this.openglRenderWindow = 0;
+    this.state = {
+      windowCenter: props.windowCenter? props.windowCenter : [0, -0.4]
+    };
   }
 
   componentDidMount(){
@@ -60,6 +63,9 @@ class MedImgView extends Component {
     if(this.props.vtkImage !== prevProps.vtkImage){
       this.initializeActor();
     }
+    if(this.props.windowCenter !== prevProps.windowCenter){
+      this.setState({...this.state, windowCenter: this.props.windowCenter});
+    }
     this.renderImage();
   }
 
@@ -73,11 +79,22 @@ class MedImgView extends Component {
       this.renderWindow.addView(this.openglRenderWindow);
       const node = ReactDOM.findDOMNode(this.ref);
 
+
       this.openglRenderWindow.setContainer(node);
       node.removeChild(this.openglRenderWindow.getCanvas());
 
       const canvas = ReactDOM.findDOMNode(this.canvas);
       this.openglRenderWindow.setCanvas(canvas);
+
+      const dims = node.getBoundingClientRect();
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      this.openglRenderWindow.setSize(
+        Math.floor(dims.width * devicePixelRatio),
+        Math.floor(dims.height * devicePixelRatio)
+      );
+
+      const camera = this.renderer.getActiveCamera();
+      camera.setWindowCenter(...this.state.windowCenter);
       
       this.interactor = vtkRenderWindowInteractor.newInstance();
 
@@ -106,9 +123,9 @@ class MedImgView extends Component {
 
       if(!this.imageMapper){
         this.imageMapper = vtkImageMapper.newInstance();
-        this.imageMapper.setSliceAtFocalPoint(true);
         this.imageMapper.setSlicingMode(slicingMode);
         this.imageMapper.setInputData(data);
+        this.imageMapper.setSliceAtFocalPoint(true);
       }
 
       if(!this.imageActor){
@@ -117,17 +134,17 @@ class MedImgView extends Component {
           .getPointData()
           .getScalars()
           .getRange();
-        // const extent = data.getExtent();
 
         this.imageActor = vtkImageSlice.newInstance();
         this.imageActor.setMapper(this.imageMapper);
         this.imageActor.getProperty().setColorWindow(dataRange[1]);
         this.imageActor.getProperty().setColorLevel(dataRange[0] + (dataRange[1] - dataRange[0]) * .25);
-        this.imageActor.getProperty().setInterpolationTypeToLinear();
+        this.imageActor.getProperty().setInterpolationTypeToNearest();
         this.renderer.addActor(this.imageActor);
 
         const camera = this.renderer.getActiveCamera();
         const position = camera.getFocalPoint();
+        
         // offset along the slicing axis
         const normal = this.imageMapper.getSlicingModeNormal();
         switch (this.imageMapper.getSlicingMode()) {
@@ -135,13 +152,13 @@ class MedImgView extends Component {
             position[0] -= normal[0];
             position[1] -= normal[1];
             position[2] -= normal[2];
-            camera.setViewUp([0, 0, 1]);
+            camera.setViewUp([0, 0, -1]);
             break;
           case SlicingMode.Y:
             position[0] -= normal[0];
             position[1] -= normal[1];
             position[2] -= normal[2];
-            camera.setViewUp([0, 1, 0]);
+            camera.setViewUp([-1, 0, 0]);
             break;
           case SlicingMode.Z:
             position[0] -= normal[0];
@@ -151,9 +168,10 @@ class MedImgView extends Component {
             break;
           default:
         }
+        
         camera.setPosition(...position);
-        // camera.setParallelProjection(true);
         this.renderer.resetCamera();
+        
       }
     }
     return Promise.resolve();
@@ -179,13 +197,8 @@ class MedImgView extends Component {
   }
 
   render() {
-    const {maxHeight, maxWidth} = this.props;
-    
     return (<Col ref={(node) => {this.ref = node}} style={{padding: 0}}>
-        <canvas ref={node => this.canvas = node}
-                width="300" height="300"
-                style={{"max-height": maxHeight, "max-width": maxWidth}}
-        />
+        <canvas ref={node => this.canvas = node}/>
       </Col>);
   }
 }
