@@ -12,9 +12,16 @@
     "node": ">=8",
     "npm": ">=5"
   },
+  "keywords": [
+    "react",
+    "vtk.js",
+    "itk",
+    "medical-image",
+    "visualization"
+  ],
   "scripts": {
     "watch": "webpack --watch",
-    "build": "webpack --progress --colors --mode production",
+    "build": "NODE_OPTIONS='--max_old_space_size=16384'; webpack --progress --colors --mode production",
     "start": "webpack-dev-server --content-base ./dist",
     "commit": "git cz",
     "semantic-release": "semantic-release"
@@ -51,7 +58,7 @@
     "dist"
   ],
   "dependencies": {
-    "med-img-reader": "^1.0.0",
+    "med-img-reader": "^1.1.0",
     "underscore": "^1.9.1",
     "url-parse": "^1.4.7",
     "vtk.js": "^12.0.0"
