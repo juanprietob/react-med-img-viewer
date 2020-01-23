@@ -3,7 +3,6 @@ import _ from 'underscore';
 import vtkImageData from 'vtk.js/Sources/Common/DataModel/ImageData';
 import vtkDataArray from 'vtk.js/Sources/Common/Core/DataArray';
 import ITKHelper from 'vtk.js/Sources/Common/DataModel/ITKHelper'
-import readImageFile from 'itk/readImageFile';
 import path from 'path'
 
 const ISELECTRON = window && window.require && window.require('electron');

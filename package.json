@@ -39,7 +39,6 @@
     "react": "^15.0.0 || ^16.0.0",
     "react-bootstrap": "^1.0.0-beta.9",
     "react-dom": "^15.0.0 || ^16.0.0",
-    "react-hapi-jwt-auth": "^1.0.0",
     "react-redux": "^7.0.3",
     "react-router-dom": "^5.0.1",
     "redux": "^4.0.1",
@@ -52,7 +51,7 @@
     "@babel/preset-react": "^7.0.0",
     "babel-loader": "^8.0.6",
     "css-loader": "^2.1.1",
-    "kw-web-suite": "^8.0.0"
+    "kw-web-suite": "^9.0.0"
   },
   "files": [
     "dist"

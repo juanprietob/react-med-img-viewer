@@ -6,11 +6,7 @@ import { withRouter } from 'react-router-dom';
 
 import './styles.css'
 
-import medImgInteractorStyleImage from './med-img-interactor-style-image';
-
 import _ from 'underscore';
-
-// import {JWTAuthService} from 'react-jwt-auth';
 
 import {Row, Card, Col, Container, ButtonToolbar, ButtonGroup, Button, ProgressBar, Dropdown} from 'react-bootstrap';
 
@@ -24,16 +20,14 @@ const { SlicingMode } = Constants;
 
 import MedImgView from './med-img-view'
 
-const Url = require('url-parse');
-
 class MedImgViewSideBySide extends Component {
   render() {
-    const {vtkImage, slicingMode1, slicingMode2} = this.props;
+    const {vtkImage, vtkLabelImage, slicingMode1, slicingMode2, labelMapOpacity, labelMapRange} = this.props;
     return (
       <Col>
         <Row>
-          <MedImgView id="XY-X" vtkImage={vtkImage} slicingMode={slicingMode1}/>
-          <MedImgView id="XY-Y" vtkImage={vtkImage} slicingMode={slicingMode2}/>
+          <MedImgView id="XY-X" vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapRange={labelMapRange} labelMapOpacity={labelMapOpacity} slicingMode={slicingMode1}/>
+          <MedImgView id="XY-Y" vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapRange={labelMapRange} labelMapOpacity={labelMapOpacity} slicingMode={slicingMode2}/>
         </Row>
       </Col>
     )
@@ -42,16 +36,16 @@ class MedImgViewSideBySide extends Component {
 
 class MedImgViewAll extends Component {
   render() {
-    const {vtkImage, slicingMode1, slicingMode2, slicingMode3} = this.props;
+    const {vtkImage, vtkLabelImage, slicingMode1, slicingMode2, slicingMode3, labelMapOpacity, labelMapRange} = this.props;
     
     return (
       <Col>
         <Row style={{maxHeight: "40%"}}>
-          <MedImgView id="XYZ-X" vtkImage={vtkImage} slicingMode={slicingMode1}/>
-          <MedImgView id="XYZ-Y" vtkImage={vtkImage} slicingMode={slicingMode2}/>
+          <MedImgView id="XYZ-X" vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapRange={labelMapRange} labelMapOpacity={labelMapOpacity} slicingMode={slicingMode1}/>
+          <MedImgView id="XYZ-Y" vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapRange={labelMapRange} labelMapOpacity={labelMapOpacity} slicingMode={slicingMode2}/>
         </Row>
         <Row style={{maxHeight: "60%"}}>
-          <MedImgView id="XYZ-Z" vtkImage={vtkImage} slicingMode={slicingMode3}/>
+          <MedImgView id="XYZ-Z" vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapRange={labelMapRange} labelMapOpacity={labelMapOpacity} slicingMode={slicingMode3}/>
         </Row>
       </Col>
     )
@@ -72,6 +66,9 @@ class MedImgViewer extends Component {
       selectedLayout: props.selectedLayout? props.selectedLayout: 1,
       progress: 0, 
       vtkImage: props.vtkImagePrimary? props.vtkImagePrimary: 0,
+      vtkLabelImage: props.vtkLabelImage? props.vtkLabelImage: 0,
+      labelMapOpacity: props.labelMapOpacity? props.labelMapOpacity: 0,
+      labelMapRange: props.labelMapRange? props.labelMapRange: [0, 1],
       filenames: [],
       style: props.style? props.style: {}
     }
@@ -85,9 +82,9 @@ class MedImgViewer extends Component {
         name: 'X', 
         icon: ()=>{return (<Square/>)},
         layout: ()=>{
-          const {vtkImage} = this.state;
+          const {vtkImage, vtkLabelImage, labelMapOpacity, labelMapRange} = this.state;
           return (
-            <MedImgView id="X" vtkImage={vtkImage} slicingMode={SlicingMode.X}/>
+            <MedImgView id="X" vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapOpacity={labelMapOpacity} labelMapRange={labelMapRange} slicingMode={SlicingMode.X}/>
             ) 
         }
       },
@@ -95,49 +92,48 @@ class MedImgViewer extends Component {
         name: 'Y', 
         icon: ()=>{return (<Square/>)},
         layout: ()=>{
-          const {vtkImage} = this.state;
-          return (<MedImgView vtkImage={vtkImage} slicingMode={SlicingMode.Y}/>)
+          const {vtkImage, vtkLabelImage, labelMapOpacity, labelMapRange} = this.state;
+          return (<MedImgView vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapOpacity={labelMapOpacity} labelMapRange={labelMapRange} slicingMode={SlicingMode.Y}/>)
         }
       },
       3: {
         name: 'Z', 
         icon: ()=>{return (<Square/>)},
         layout: ()=>{
-          const {vtkImage} = this.state;
-          return (<MedImgView vtkImage={vtkImage} slicingMode={SlicingMode.Z}/>)
+          const {vtkImage, vtkLabelImage, labelMapOpacity, labelMapRange} = this.state;
+          return (<MedImgView vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapOpacity={labelMapOpacity} labelMapRange={labelMapRange} slicingMode={SlicingMode.Z}/>)
         }
       },
       4: {
         name: 'XY', 
         icon: ()=>{return (<Row><Square/><Square/></Row>)},
         layout: ()=>{
-          const {vtkImage} = this.state;
-          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y}/>
+          const {vtkImage, vtkLabelImage, labelMapOpacity, labelMapRange} = this.state;
+          return <MedImgViewSideBySide vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapOpacity={labelMapOpacity} labelMapRange={labelMapRange} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y}/>
         }
       },
       5: {
         name: 'YZ', 
         icon: ()=>{return (<Row><Square/><Square/></Row>)},
         layout: ()=>{
-          const {vtkImage} = this.state;
-          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.Y} slicingMode2={SlicingMode.Z}/>
+          const {vtkImage, vtkLabelImage, labelMapOpacity, labelMapRange} = this.state;
+          return <MedImgViewSideBySide vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapOpacity={labelMapOpacity} labelMapRange={labelMapRange} slicingMode1={SlicingMode.Y} slicingMode2={SlicingMode.Z}/>
         }
       },
       6: {
         name: 'XZ', 
         icon: ()=>{return (<Row><Square/><Square/></Row>)},
         layout: ()=>{
-          const {vtkImage} = this.state;
-          return <MedImgViewSideBySide vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Z}/>
+          const {vtkImage, vtkLabelImage, labelMapOpacity, labelMapRange} = this.state;
+          return <MedImgViewSideBySide vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapOpacity={labelMapOpacity} labelMapRange={labelMapRange} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Z}/>
         }
       },
       7: {
         name: 'XYZ', 
         icon: ()=>{return (<Grid/>)},
         layout: ()=>{
-          const {vtkImage} = this.state;
-
-          return <MedImgViewAll vtkImage={vtkImage} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y} slicingMode3={SlicingMode.Z}/>
+          const {vtkImage, vtkLabelImage, labelMapOpacity, labelMapRange} = this.state;
+          return <MedImgViewAll vtkImage={vtkImage} vtkLabelImage={vtkLabelImage} labelMapOpacity={labelMapOpacity} labelMapRange={labelMapRange} slicingMode1={SlicingMode.X} slicingMode2={SlicingMode.Y} slicingMode3={SlicingMode.Z}/>
         }
       }
     };
@@ -148,6 +144,18 @@ class MedImgViewer extends Component {
     
     if(this.props.vtkImagePrimary !== prevProps.vtkImagePrimary){
       this.setState({...this.state, vtkImage: this.props.vtkImagePrimary});
+    }
+
+    if(this.props.vtkLabelImage !== prevProps.vtkLabelImage){
+      this.setState({...this.state, vtkLabelImage: this.props.vtkLabelImage});
+    }
+
+    if(this.props.labelMapOpacity !== prevProps.labelMapOpacity){
+      this.setState({...this.state, labelMapOpacity: this.props.labelMapOpacity});
+    }
+
+    if(this.props.labelMapRange !== prevProps.labelMapRange){
+      this.setState({...this.state, labelMapRange: this.props.labelMapRange});
     }
 
     if(this.props.selectedLayout !== prevProps.selectedLayout){
