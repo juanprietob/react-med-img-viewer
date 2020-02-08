@@ -248,8 +248,12 @@ class MedImgView extends Component {
 
   setLabelMapRange(range){
     this.labelMap.pieceWise.removeAllPoints();
-    this.labelMap.pieceWise.addPoint(0, range[0]);
-    this.labelMap.pieceWise.addPoint(1, range[1]);
+    if(range && range.length > 1){
+      var step = 1.0/(range.length - 1);
+      _.each(range, (r, i)=>{
+        this.labelMap.pieceWise.addPoint(step*i, r);
+      })
+    }
     this.labelMap.actor.getProperty().setScalarOpacity(this.labelMap.pieceWise);
     this.renderImage();
   }
