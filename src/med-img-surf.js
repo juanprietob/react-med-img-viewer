@@ -11,8 +11,6 @@ import React, { Component } from 'react'
 import ReactDOM from 'react-dom';
 // import PropTypes from 'prop-types'
 
-import MedImgService from './med-img-service';
-
 import _ from 'underscore';
 import { connect } from "react-redux";
 import { withRouter } from 'react-router-dom';
@@ -36,7 +34,8 @@ class MedImgSurf extends Component {
 
   componentDidMount(){
     const {
-      location
+      location,
+      data
     } = this.props
 
     const self = this;
@@ -44,8 +43,8 @@ class MedImgSurf extends Component {
     // this.jwtauth = new JWTAuthService();
     // this.jwtauth.setHttp(this.props.http);
 
-    this.medimgservice = new MedImgService();
-    this.medimgservice.setHttp(this.props.http);
+    // this.medimgservice = new MedImgService();
+    // this.medimgservice.setHttp(this.props.http);
 
 	// ----------------------------------------------------------------------------
 	// Standard rendering code setup
@@ -82,49 +81,34 @@ class MedImgSurf extends Component {
     const camera = renderer.getActiveCamera();
     // camera.setPosition(...position);
 
-    Promise.all(_.map([
-    { surf: "Model_1_1.vtk", color: [1,86,104] },
-    { surf: "Model_2_2.vtk", color: [1,86,104] },
-    { surf: "Model_3_3.vtk", color: [15,129,199] },
-    { surf: "Model_4_4.vtk", color: [15,129,199] },
-    { surf: "Model_5_5.vtk", color: [255,85,11] },
-    { surf: "Model_6_6.vtk", color: [255,85,11] },
-    { surf: "Model_7_7.vtk", color: [255,48,79] },
-    { surf: "Model_8_8.vtk", color: [255,48,79] },
-    { surf: "Model_9_9.vtk", color: [199,255,0] },
-    { surf: "Model_10_10.vtk", color: [199,255,0] },
-    { surf: "Model_40_40.vtk", color: [13,226,234] },
-    { surf: "Model_41_41.vtk", color: [13,226,234] },
-    { surf: "left_cortex.vtk", color: [255, 255, 255], /*representation: 1,*/ opacity: 0.3 }], function(surf){
-      return self.medimgservice.getPublicSurf(surf.surf)
-      .then(function(res){
-        reader.parseAsText(res.data);
-        
-        const polydata = reader.getOutputData();
-        const mapper = vtkMapper.newInstance();
-        const actor = vtkActor.newInstance();
+    Promise.all(_.map(data, function(surf){
+      reader.parseAsText(surf.data);
+      const polydata = reader.getOutputData();
+      const mapper = vtkMapper.newInstance();
+      const actor = vtkActor.newInstance();
 
-        actor.setMapper(mapper);
-        if(surf.color){
-          actor.getProperty().setColor(..._.map(surf.color, (c)=>{return c/255}));
-        }
-        
-        if(surf.representation != undefined){
-          actor.getProperty().setRepresentation(surf.representation);
-        }
-        if(surf.opacity != undefined){
-          actor.getProperty().setOpacity(surf.opacity);
-        }
-        actor.getProperty().setInterpolationToPhong();
-        mapper.setInputData(polydata);
+      actor.setMapper(mapper);
+      if(surf.color){
+        actor.getProperty().setColor(..._.map(surf.color, (c)=>{return c/255}));
+      }
+      
+      if(surf.representation != undefined){
+        actor.getProperty().setRepresentation(surf.representation);
+      }
+      if(surf.opacity != undefined){
+        actor.getProperty().setOpacity(surf.opacity);
+      }
+      actor.getProperty().setInterpolationToPhong();
+      mapper.setInputData(polydata);
 
-        renderer.addActor(actor);
+      renderer.addActor(actor);
 
-        const position = camera.getFocalPoint();
-        
-        renderer.resetCamera();
-        renderWindow.render();
-      })
+      const position = camera.getFocalPoint();
+      
+      renderer.resetCamera();
+      renderWindow.render();
+
+      return Promise.resolve();
     }))
     .then(function(){
       self.azimuth(renderWindow, camera, 0.1)
