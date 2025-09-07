@@ -51,7 +51,7 @@
     "@babel/preset-react": "^7.0.0",
     "babel-loader": "^8.0.6",
     "css-loader": "^2.1.1",
-    "kw-web-suite": "^9.0.0"
+    "kw-web-suite": "^11.1.0"
   },
   "files": [
     "dist"
